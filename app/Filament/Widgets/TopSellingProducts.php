@@ -15,7 +15,7 @@ class TopSellingProducts extends BaseWidget
     {
         return $table
             ->query(
-                Product::query()->where('is_featured', true) // approximating top selling as featured for now
+                Product::query()->where('is_featured', true)->limit(5) // approximating top selling as featured for now
             )
             ->columns([
                 Tables\Columns\TextColumn::make('name')

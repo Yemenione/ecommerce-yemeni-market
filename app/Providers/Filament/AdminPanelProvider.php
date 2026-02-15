@@ -25,7 +25,7 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->id('admin')
-            ->path('admin')
+            ->path('dashboard')
             ->login()
             ->colors([
                 'primary' => Color::Amber,
@@ -38,7 +38,6 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -54,6 +53,19 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
-            ->plugin(\Filament\SpatieLaravelTranslatablePlugin::make()->defaultLocales(['fr', 'ar', 'en']));
+            ->plugins([
+                \Filament\SpatieLaravelTranslatablePlugin::make()->defaultLocales(['en', 'ar', 'fr', 'de', 'es', 'it', 'nl', 'tr']),
+
+            ])
+            ->brandName(fn () => \App\Models\GeneralSetting::first()?->site_name ?? 'Yemeni Market')
+            ->brandLogo(fn () => ($logo = \App\Models\GeneralSetting::first()?->logo) ? asset('storage/' . $logo) : null)
+            ->brandLogoHeight('3rem')
+            ->colors([
+                'primary' => '#0088cc',
+            ])
+            ->renderHook(
+                'panels::sidebar.footer',
+                fn (): string => '<div class="px-6 py-4 text-xs text-center text-gray-400 dark:text-gray-500">Powered by <a href="https://www.websmartee.com" target="_blank" class="font-bold hover:text-primary-500">Web SmarTee</a></div>',
+            );
     }
 }

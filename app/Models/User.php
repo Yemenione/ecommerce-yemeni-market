@@ -4,13 +4,24 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        // Allow access to admin/dashboard for specific emails
+        return in_array($this->email, [
+            'admin@yemenimarket.com',
+            'shihabhajbe@gmail.com',
+        ]);
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -22,6 +33,9 @@ class User extends Authenticatable
         'email',
         'password',
         'address',
+        'avatar_url',
+        'phone',
+        'birthday',
     ];
 
     /**

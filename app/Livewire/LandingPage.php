@@ -18,12 +18,39 @@ class LandingPage extends Component
             $cart[$productId] = 1;
         }
         Session::put('cart', $cart);
+        
+        $this->dispatch('cart-updated');
+        $this->dispatch('open-cart-drawer');
     }
 
     public function render()
     {
+        $banners = \App\Models\Banner::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
+        $categories = \App\Models\Category::whereNotNull('image')
+            ->take(10)
+            ->get();
+        
+        // Fallback if no categories have images yet, fetch generic ones
+        if ($categories->isEmpty()) {
+             $categories = \App\Models\Category::take(10)->get();
+        }
+
+        $flashSales = \App\Models\FlashSale::where('is_active', true)
+            ->where('start_time', '<=', now())
+            ->where('end_time', '>=', now())
+            ->whereHas('product', fn($q) => $q->where('is_active', true))
+            ->with(['product'])
+            ->get();
+
         return view('livewire.landing-page', [
-            'featuredProducts' => Product::where('is_featured', true)->take(4)->get(),
+            'banners' => $banners,
+            'categories' => $categories,
+            'flashSales' => $flashSales,
+            'newArrivals' => Product::where('is_active', true)->latest()->take(8)->get(),
+            'bestSellers' => Product::where('is_active', true)->orderByDesc('sold_count')->take(8)->get(),
         ]);
     }
 }

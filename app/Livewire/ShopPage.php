@@ -16,6 +16,15 @@ class ShopPage extends Component
     public $minPrice = 0;
     public $maxPrice = 1000;
     public $sort = 'latest';
+    public $search = '';
+
+    protected $queryString = [
+        'selectedCategories' => ['except' => []],
+        'minPrice' => ['except' => 0],
+        'maxPrice' => ['except' => 1000],
+        'sort' => ['except' => 'latest'],
+        'search' => ['except' => ''],
+    ];
 
     public function addToCart($productId)
     {
@@ -25,9 +34,11 @@ class ShopPage extends Component
         } else {
             $cart[$productId] = 1;
         }
-        Session::put('cart', $cart);
+        session()->put('cart', $cart);
         
-        $this->dispatch('cart-updated'); // Optional, if I add listener later
+        $this->dispatch('cart-updated');
+        $this->dispatch('open-cart-drawer');
+        $this->dispatch('notify', message: __('Product added to cart!'));
     }
 
     public function updatingSelectedCategories()
@@ -48,15 +59,21 @@ class ShopPage extends Component
     public function render()
     {
         $products = Product::query()
+            ->when($this->search, function ($query) {
+                $query->where(function ($q) {
+                    $q->where('name', 'like', '%' . $this->search . '%')
+                      ->orWhere('description', 'like', '%' . $this->search . '%');
+                });
+            })
             ->when($this->selectedCategories, function ($query) {
                 $query->whereIn('category_id', $this->selectedCategories);
             })
-            ->whereBetween('price_eur', [$this->minPrice, $this->maxPrice])
+            ->whereBetween('base_price', [$this->minPrice, $this->maxPrice])
             ->when($this->sort === 'price_low', function ($query) {
-                $query->orderBy('price_eur', 'asc');
+                $query->orderBy('base_price', 'asc');
             })
             ->when($this->sort === 'price_high', function ($query) {
-                $query->orderBy('price_eur', 'desc');
+                $query->orderBy('base_price', 'desc');
             })
             ->when($this->sort === 'latest', function ($query) {
                 $query->latest();

@@ -17,20 +17,23 @@
                                 </div>
                                 <div class="ml-4 flex-1">
                                     <h3 class="text-sm font-medium text-gray-900">{{ $item->name }}</h3>
-                                    <p class="text-sm text-gray-500">{{ number_format($item->price_eur, 2) }} €</p>
+                                    @if($item->variant_name)
+                                        <p class="text-[10px] text-[#D4AF37] uppercase tracking-widest mt-1">{{ $item->variant_name }}</p>
+                                    @endif
+                                    <p class="text-sm text-gray-500">{{ number_format($item->final_price, 2) }} €</p>
                                 </div>
                             </div>
                             
                             <div class="flex items-center space-x-4">
                                 <div class="flex items-center border border-gray-300 rounded">
-                                    <button wire:click="decrement({{ $item->id }})" class="px-2 py-1 text-gray-600 hover:bg-gray-100">-</button>
+                                    <button wire:click="decrement('{{ $item->cart_key }}')" class="px-2 py-1 text-gray-600 hover:bg-gray-100">-</button>
                                     <span class="px-2 text-sm text-gray-700">{{ $item->quantity }}</span>
-                                    <button wire:click="increment({{ $item->id }})" class="px-2 py-1 text-gray-600 hover:bg-gray-100">+</button>
+                                    <button wire:click="increment('{{ $item->cart_key }}')" class="px-2 py-1 text-gray-600 hover:bg-gray-100">+</button>
                                 </div>
                                 <div class="text-sm font-medium text-gray-900 w-20 text-right">
                                     {{ number_format($item->subtotal, 2) }} €
                                 </div>
-                                <button wire:click="remove({{ $item->id }})" class="text-red-500 hover:text-red-700">
+                                <button wire:click="remove('{{ $item->cart_key }}')" class="text-red-500 hover:text-red-700">
                                     <span class="sr-only">{{ __('Remove') }}</span>
                                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

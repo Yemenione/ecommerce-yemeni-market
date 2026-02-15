@@ -22,3 +22,16 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Deployment & Temp
+deploy/
+*.zip
+*.tar.gz
+test_output.txt
+migration_error.txt
+debug_*.php
+check_*.php
+fix_*.php
+admin_debug.log
+error_log
+.DS_Store

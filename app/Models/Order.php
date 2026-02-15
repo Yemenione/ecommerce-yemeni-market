@@ -11,15 +11,25 @@ class Order extends Model
 
     protected $fillable = [
         'user_id',
+        'subtotal_eur',
+        'shipping_cost',
+        'shipping_method_name',
         'total_eur',
         'status',
         'payment_method',
         'shipping_address',
         'items',
+        'tracking_number',
     ];
 
     protected $casts = [
         'shipping_address' => 'array',
         'items' => 'array',
+        'status' => \App\Enums\OrderStatus::class,
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(\App\Models\User::class);
+    }
 }

@@ -19,20 +19,47 @@ class CategoryResource extends Resource
 
     protected static ?string $model = Category::class;
 
+    protected static ?string $modelLabel = null;
+    protected static ?string $pluralModelLabel = null;
+    protected static ?string $navigationLabel = null;
+
+    public static function getModelLabel(): string
+    {
+        return __('Category');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Categories');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Categories');
+    }
     protected static ?string $navigationIcon = 'heroicon-o-tag';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name'];
+    }
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\TextInput::make('name')
+                    ->label(__('Name'))
                     ->required(),
                 Forms\Components\TextInput::make('slug')
+                    ->label(__('Slug'))
                     ->required()
                     ->unique(ignoreRecord: true),
                 Forms\Components\FileUpload::make('image')
+                    ->image()
                     ->directory('categories')
-                    ->image(),
+                    ->label(__('Category Image'))
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -40,7 +67,15 @@ class CategoryResource extends Resource
     {
         return $table
             ->columns([
-                //
+                Tables\Columns\ImageColumn::make('image')
+                    ->circular(),
+                Tables\Columns\TextColumn::make('name')
+                    ->label(__('Name'))
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('slug')
+                    ->searchable()
+                    ->sortable(),
             ])
             ->filters([
                 //

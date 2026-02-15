@@ -13,7 +13,33 @@ class CartPage extends Component
 
     public function mount()
     {
-        $this->cart = Session::get('cart', []);
+        $this->cart = $this->getNormalizedCart();
+    }
+
+    private function getNormalizedCart()
+    {
+        $cart = session()->get('cart', []);
+        $normalized = [];
+        $changed = false;
+
+        foreach ($cart as $key => $value) {
+            if (is_int($value)) {
+                $normalized[$key] = [
+                    'id' => $key,
+                    'variant_id' => null,
+                    'quantity' => $value,
+                ];
+                $changed = true;
+            } else {
+                $normalized[$key] = $value;
+            }
+        }
+
+        if ($changed) {
+            session()->put('cart', $normalized);
+        }
+
+        return $normalized;
     }
 
     public function getCartItemsProperty()
@@ -22,13 +48,36 @@ class CartPage extends Component
             return collect([]);
         }
 
-        $products = Product::whereIn('id', array_keys($this->cart))->get();
+        $productIds = collect($this->cart)->pluck('id')->filter()->unique();
+        $products = Product::whereIn('id', $productIds)->with('variants')->get();
 
-        return $products->map(function ($product) {
-            $product->quantity = $this->cart[$product->id];
-            $product->subtotal = $product->price_eur * $product->quantity;
-            return $product;
-        });
+        return collect($this->cart)->map(function ($cartItem, $key) use ($products) {
+            $product = $products->firstWhere('id', $cartItem['id']);
+            if (!$product) return null;
+
+            $item = clone $product;
+            $item->cart_key = $key;
+            $item->quantity = $cartItem['quantity'];
+            $item->variant_id = $cartItem['variant_id'];
+
+            $price = $product->base_price;
+            $variant = $product->variants->firstWhere('id', $cartItem['variant_id']);
+
+            if ($variant) {
+                $price += $variant->price_modifier;
+                $item->variant_name = collect([
+                    $variant->color_code ? "Color: {$variant->color_code}" : null,
+                    $variant->size ? "Size: {$variant->size}" : null,
+                    $variant->weight ? "Weight: {$variant->weight}" : null,
+                ])->filter()->implode(', ');
+            } else {
+                $item->variant_name = null;
+            }
+
+            $item->final_price = $price;
+            $item->subtotal = $price * $item->quantity;
+            return $item;
+        })->filter();
     }
 
     public function getTotalProperty()
@@ -36,27 +85,28 @@ class CartPage extends Component
         return $this->cartItems->sum('subtotal');
     }
 
-    public function increment($id)
+    public function increment($key)
     {
-        if (isset($this->cart[$id])) {
-            $this->cart[$id]++;
+        if (isset($this->cart[$key])) {
+            $this->cart[$key]['quantity']++;
             Session::put('cart', $this->cart);
         }
     }
 
-    public function decrement($id)
+    public function decrement($key)
     {
-        if (isset($this->cart[$id]) && $this->cart[$id] > 1) {
-            $this->cart[$id]--;
+        if (isset($this->cart[$key]) && $this->cart[$key]['quantity'] > 1) {
+            $this->cart[$key]['quantity']--;
             Session::put('cart', $this->cart);
         }
     }
 
-    public function remove($id)
+    public function remove($key)
     {
-        if (isset($this->cart[$id])) {
-            unset($this->cart[$id]);
+        if (isset($this->cart[$key])) {
+            unset($this->cart[$key]);
             Session::put('cart', $this->cart);
+            $this->dispatch('cart-updated');
         }
     }
 

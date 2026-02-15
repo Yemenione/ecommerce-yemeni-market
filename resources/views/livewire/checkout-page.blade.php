@@ -32,8 +32,12 @@
 
                                     <div class="flex-1 pt-2 flex items-end justify-between">
                                         <p class="mt-1 text-sm font-medium text-gray-900">{{ number_format($item->subtotal, 2) }} €</p>
-                                        <div class="ml-4">
-                                            <p class="text-sm text-gray-500">Qty {{ $item->quantity }}</p>
+                                        <div class="ml-4 flex-1">
+                                            <p class="text-sm font-bold text-gray-900">{{ $item->name }}</p>
+                                            @if($item->variant_name)
+                                                <p class="text-[10px] text-[#D4AF37] uppercase tracking-widest">{{ $item->variant_name }}</p>
+                                            @endif
+                                            <p class="mt-1 text-xs text-gray-500">{{ __('Quantity') }}: {{ $item->quantity }}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -42,6 +46,52 @@
                     </ul>
                     <dl class="border-t border-gray-200 py-6 px-4 sm:px-6">
                         <div class="flex items-center justify-between">
+                            <dt class="text-sm text-gray-600">{{ __('Subtotal') }}</dt>
+                            <dd class="text-sm font-medium text-gray-900">{{ number_format($items->sum('subtotal'), 2) }} €</dd>
+                        </div>
+                        <div class="flex items-center justify-between mt-2">
+                            <dt class="text-sm text-gray-600">{{ __('Shipping') }}</dt>
+                            <dd class="text-sm font-medium text-gray-900">
+                                @if($shippingCost > 0)
+                                    {{ number_format($shippingCost, 2) }} €
+                                @else
+                                    <span class="text-green-600">{{ __('Free') }}</span>
+                                @endif
+                            </dd>
+                        </div>
+
+                        <div class="flex items-center justify-between mt-2 border-t border-gray-100 pt-2">
+                            <dt class="text-sm text-gray-600">{{ __('Taxes') }}</dt>
+                            <dd class="text-sm font-medium text-gray-900">{{ number_format($taxTotal, 2) }} €</dd>
+                        </div>
+                        
+                        <!-- Shipping Method Selection -->
+                        <div class="mt-4 border-t border-gray-100 pt-4">
+                            <h3 class="text-sm font-medium text-gray-900 mb-2">{{ __('Shipping Method') }}</h3>
+                            <div class="space-y-2">
+                                @forelse($availableShippingMethods as $method)
+                                    <div class="relative flex items-center">
+                                        <div class="flex items-center h-5">
+                                            <input id="shipping-method-{{ $method->id }}" name="shippingMethod" type="radio" wire:model.live="shippingMethodId" value="{{ $method->id }}" class="focus:ring-[#D4AF37] h-4 w-4 text-[#D4AF37] border-gray-300">
+                                        </div>
+                                        <div class="ml-3 text-sm">
+                                            <label for="shipping-method-{{ $method->id }}" class="font-medium text-gray-700">
+                                                {{ $method->name }} - 
+                                                @if($items->sum('subtotal') >= $method->min_order_amount && $method->min_order_amount > 0)
+                                                    <span class="text-green-600 font-bold">{{ __('Free') }}</span>
+                                                @else
+                                                    {{ number_format($method->price, 2) }} €
+                                                @endif
+                                            </label>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <p class="text-sm text-red-500">{{ __('No shipping methods available for this country.') }}</p>
+                                @endforelse
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between border-t border-gray-200 mt-6 pt-6">
                             <dt class="text-base font-medium text-gray-900">{{ __('Total') }}</dt>
                             <dd class="text-base font-medium text-gray-900">{{ number_format($total, 2) }} €</dd>
                         </div>
@@ -134,7 +184,7 @@
                                     <input id="payment-stripe" name="paymentMethod" type="radio" wire:model="paymentMethod" value="stripe" class="focus:ring-[#D4AF37] h-4 w-4 text-[#D4AF37] border-gray-300">
                                 </div>
                                 <div class="ml-3 text-sm">
-                                    <label for="payment-stripe" class="font-medium text-gray-700">Stripe (Credit Card)</label>
+                                    <label for="payment-stripe" class="font-medium text-gray-700">{{ __('Stripe (Credit Card)') }}</label>
                                 </div>
                             </div>
                             <div class="relative flex items-start mt-4">
@@ -142,19 +192,115 @@
                                     <input id="payment-cod" name="paymentMethod" type="radio" wire:model="paymentMethod" value="cod" class="focus:ring-[#D4AF37] h-4 w-4 text-[#D4AF37] border-gray-300">
                                 </div>
                                 <div class="ml-3 text-sm">
-                                    <label for="payment-cod" class="font-medium text-gray-700">Cash on Delivery (Test)</label>
+                                    <label for="payment-cod" class="font-medium text-gray-700">{{ __('Cash on Delivery (Test)') }}</label>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <div class="mt-10">
-                        <button type="submit" class="w-full bg-[#3E2723] border border-transparent rounded-md shadow-sm py-3 px-4 text-base font-medium text-white hover:bg-[#2d1c19] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D4AF37] focus:ring-offset-gray-50">
-                            {{ __('Place Order') }}
-                        </button>
+                        <x-filament::button
+                            type="submit"
+                            size="lg"
+                            color="primary"
+                            class="w-full bg-[#3E2723] hover:bg-[#2d1c19] text-white py-4 rounded-xl shadow-xl transform active:scale-[0.98] transition-all"
+                            wire:loading.attr="disabled"
+                            id="submit-button"
+                        >
+                            <span wire:loading.remove>{{ __('Confirm Order') }}</span>
+                            <span wire:loading>{{ __('Processing...') }}</span>
+                        </x-filament::button>
+                        
+                        <!-- Stripe Elements Container (Hidden until needed) -->
+                        <div id="stripe-container" class="mt-6 hidden bg-white p-6 rounded-xl border border-gray-200 shadow-sm" wire:ignore>
+                            <h3 class="text-sm font-bold text-gray-900 mb-4 uppercase tracking-widest">{{ __('Payment Details') }}</h3>
+                            <div id="payment-element" class="mb-6"></div>
+                            <button id="stripe-pay-button" class="w-full bg-[#D4AF37] text-black font-bold py-3 rounded-lg hover:bg-black hover:text-white transition-all duration-500 uppercase tracking-widest text-xs">
+                                {{ __('Pay Now') }}
+                            </button>
+                            <p id="payment-message" class="text-red-500 text-xs mt-3 hidden"></p>
+                        </div>
                     </div>
                 </form>
             </div>
         </div>
     </div>
+
+    @push('head')
+    <script src="https://js.stripe.com/v3/"></script>
+    @endpush
+
+    <script wire:ignore>
+        document.addEventListener('livewire:initialized', () => {
+            const stripe = Stripe('{{ $stripePublicKey }}');
+            let elements;
+            const container = document.getElementById('stripe-container');
+            const submitBtn = document.getElementById('submit-button');
+            const stripeBtn = document.getElementById('stripe-pay-button');
+            const messageEl = document.getElementById('payment-message');
+
+            const appearance = {
+                theme: 'none',
+                variables: {
+                    colorPrimary: '#D4AF37',
+                    colorBackground: '#ffffff',
+                    colorText: '#1A1A1A',
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                }
+            };
+
+            const options = {
+                clientSecret: '{{ $clientSecret }}',
+                appearance,
+            };
+
+            submitBtn.addEventListener('click', async (e) => {
+                if (@this.paymentMethod === 'stripe') {
+                    e.preventDefault();
+                    
+                    // Validate basic fields first via Livewire
+                    try {
+                        const isValid = await @this.call('validateForm');
+                        if (!isValid) return;
+                    } catch (e) {
+                        return; // Validation failed, Livewire handles errors
+                    }
+
+                    // Show Stripe elements
+                    container.classList.remove('hidden');
+                    submitBtn.classList.add('hidden');
+
+                    if (!elements) {
+                        elements = stripe.elements(options);
+                        const paymentElement = elements.create('payment');
+                        paymentElement.mount('#payment-element');
+                    }
+                }
+            });
+
+            stripeBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                stripeBtn.disabled = true;
+                stripeBtn.textContent = '{{ __("Validating...") }}';
+
+                const { error, paymentIntent } = await stripe.confirmPayment({
+                    elements,
+                    confirmParams: {
+                        return_url: window.location.href,
+                    },
+                    redirect: 'if_required'
+                });
+
+                if (error) {
+                    messageEl.textContent = error.message;
+                    messageEl.classList.remove('hidden');
+                    stripeBtn.disabled = false;
+                    stripeBtn.textContent = '{{ __("Pay Now") }}';
+                } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+                    // Call Livewire to place the order
+                    @this.call('placeOrder', paymentIntent.id);
+                }
+            });
+        });
+    </script>
 </div>
