@@ -211,6 +211,7 @@ x-init="window.addEventListener('scroll', () => { scrolled = window.pageYOffset 
                 </div>
             </div>
         </div>
+    </div> <!-- Close fixed header container -->
 
         <!-- Search Overlay -->
         <div x-show="searchOpen" 
@@ -293,7 +294,6 @@ x-init="window.addEventListener('scroll', () => { scrolled = window.pageYOffset 
                 </div>
             </div>
         </div>
-    </div>
 
     <!-- Spacer -->
     <div :class="scrolled ? 'h-16' : 'h-24 md:h-28'"></div>
@@ -384,7 +384,7 @@ x-init="window.addEventListener('scroll', () => { scrolled = window.pageYOffset 
                                                 <p class="text-[10px] font-bold uppercase tracking-[0.3em] text-gray-400 mb-1">{{ __('Total') }}</p>
                                                 <p class="text-4xl font-serif text-gray-900">€{{ number_format($this->cartTotal, 2) }}</p>
                                             </div>
-                                            <p class="text-[10px] text-gray-400 italic">{{ __('Taxes included') }}</p>
+                                            <p class="text-[10px] text-gray-400 italic">{{ __('Calculated at checkout') }}</p>
                                         </div>
                                         <div class="flex flex-col gap-4">
                                             <a href="{{ route('checkout') }}" class="w-full bg-[#1A1A1A] text-white py-5 text-[10px] font-bold uppercase tracking-[0.4em] text-center hover:bg-[#D4AF37] transition-all duration-500 shadow-xl">

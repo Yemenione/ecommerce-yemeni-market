@@ -29,13 +29,13 @@ class LandingPage extends Component
             ->orderBy('sort_order')
             ->get();
 
-        $categories = \App\Models\Category::whereNotNull('image')
+        $categories = \App\Models\Category::has('products')->whereNotNull('image')
             ->take(10)
             ->get();
         
         // Fallback if no categories have images yet, fetch generic ones
         if ($categories->isEmpty()) {
-             $categories = \App\Models\Category::take(10)->get();
+             $categories = \App\Models\Category::has('products')->take(10)->get();
         }
 
         $flashSales = \App\Models\FlashSale::where('is_active', true)

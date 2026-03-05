@@ -82,7 +82,7 @@ class ShopPage extends Component
 
         return view('livewire.shop-page', [
             'products' => $products,
-            'categories' => Category::all(),
+            'categories' => Category::has('products')->get(),
         ]);
     }
 }

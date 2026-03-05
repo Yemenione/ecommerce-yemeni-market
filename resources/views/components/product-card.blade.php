@@ -48,25 +48,56 @@
             </button>
         </div>
 
+        <!-- Desktop Hover Add to Cart Strip (Hidden on Mobile) -->
         <button wire:click.prevent="addToCart({{ $product->id }})" 
-                class="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-sm text-black py-3 text-[10px] font-bold uppercase tracking-[0.2em] transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 hover:bg-black hover:text-white border border-black/5">
+                class="hidden md:block absolute bottom-0 left-0 right-0 bg-white/70 backdrop-blur-md text-black py-4 text-[9px] font-bold uppercase tracking-[0.3em] transform translate-y-full opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-[600ms] ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-[#D4AF37] hover:text-white border-t border-white/20">
             {{ __('Add to Cart') }}
+        </button>
+
+        <!-- Persistent Mobile Add to Cart Button (Only on Mobile) -->
+        <button wire:click.prevent="addToCart({{ $product->id }})" 
+                class="md:hidden absolute bottom-3 right-3 w-10 h-10 bg-white/95 backdrop-blur-md rounded-full flex items-center justify-center text-black shadow-[0_5px_15px_rgba(0,0,0,0.1)] active:scale-95 transition-all">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+            <div class="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#D4AF37] rounded-full flex items-center justify-center shadow-sm">
+                <svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+            </div>
         </button>
     </a>
 
     <!-- Details Section -->
-
-    <!-- Details Section -->
-    <div class="pt-4 pb-2 text-center">
-        <h3 class="text-xs text-gray-500 uppercase tracking-widest mb-1 px-2 line-clamp-1">
+    <div class="pt-5 pb-3 transition-transform duration-500 group-hover:-translate-y-1 px-2 md:text-center">
+        <h3 class="text-[11px] font-sans text-gray-500 uppercase tracking-[0.2em] mb-2 px-1 line-clamp-1">
             <a href="{{ route('product.show', $product->slug) }}" class="hover:text-[#D4AF37] transition-colors duration-300">{{ $product->name }}</a>
         </h3>
         <div class="flex flex-col items-center gap-1">
-            <span class="font-serif text-lg text-gray-900 tracking-tight">€{{ number_format($product->base_price, 2) }}</span>
+            <span class="font-serif text-xl tracking-tighter text-gray-900">€{{ number_format($product->base_price, 2) }}</span>
             @if($product->is_flash_sale)
-                <span class="text-xs text-gray-400 line-through">€{{ number_format($product->base_price * 1.2, 2) }}</span>
+                <span class="text-[10px] font-sans text-gray-400 line-through tracking-widest">€{{ number_format($product->base_price * 1.2, 2) }}</span>
             @endif
         </div>
+        
+        <!-- Variant Indicators -->
+        @if($product->variants->count() > 0)
+            <div class="flex flex-wrap justify-center gap-1.5 mt-2">
+                @foreach($product->variants->take(3) as $variant)
+                    @php
+                        $label = $variant->weight ?? $variant->size ?? null;
+                    @endphp
+                    @if($label)
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-medium bg-gray-100 text-gray-700 border border-gray-200 uppercase tracking-wider">
+                            {{ $label }}
+                        </span>
+                    @elseif($variant->color_code)
+                        <span class="inline-block w-3 h-3 rounded-full border border-gray-300" style="background-color: {{ $variant->color_code }}" title="{{ __('Options Available') }}"></span>
+                    @endif
+                @endforeach
+                @if($product->variants->count() > 3)
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium text-gray-500">
+                        +{{ $product->variants->count() - 3 }}
+                    </span>
+                @endif
+            </div>
+        @endif
         
         <!-- Subtle Star Rating -->
         <div class="flex justify-center items-center mt-2 opacity-60">

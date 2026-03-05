@@ -13,4 +13,9 @@ class Category extends Model
     protected $fillable = ['name', 'slug', 'description', 'image', 'is_active', 'is_featured'];
 
     protected $translatable = ['name', 'description'];
+
+    public function products()
+    {
+        return $this->hasMany(Product::class);
+    }
 }

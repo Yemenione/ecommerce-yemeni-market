@@ -95,7 +95,9 @@ class Navbar extends Component
             $variant = $product->variants->firstWhere('id', $cartItem['variant_id']);
 
             if ($variant) {
-                $price += $variant->price_modifier;
+                if ($variant->price_modifier > 0) {
+                    $price = $variant->price_modifier;
+                }
                 $item->variant_name = collect([
                     $variant->color_code ? "Color: {$variant->color_code}" : null,
                     $variant->size ? "Size: {$variant->size}" : null,
@@ -138,7 +140,7 @@ class Navbar extends Component
 
     public function getCategoriesProperty()
     {
-        return \App\Models\Category::whereNotNull('image')
+        return \App\Models\Category::has('products')->whereNotNull('image')
             ->take(4)
             ->get();
     }

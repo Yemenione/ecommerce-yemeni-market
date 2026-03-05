@@ -1,11 +1,12 @@
 <div class="bg-white">
     <!-- 2. Highly Advanced Cinematic Hero -->
-    <div x-data="{ activeSlide: 0, slides: {{ $banners->count() > 0 ? $banners->count() : 2 }}, timer: null }" 
+    <div x-data="{ activeSlide: 0, slides: {{ $banners->count() > 0 ? $banners->count() : 2 }}, timer: null, scrolled: 0 }" 
          x-init="timer = setInterval(() => { activeSlide = activeSlide === slides - 1 ? 0 : activeSlide + 1 }, 8000)"
-         class="relative h-[85vh] w-full overflow-hidden bg-black">
+         @scroll.window="scrolled = window.scrollY"
+         class="hero-container relative w-full overflow-hidden bg-[#0A0A0A]">
         
         <!-- Animated Background Grain -->
-        <div class="absolute inset-0 z-10 opacity-[0.03] pointer-events-none mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
+        <div class="absolute inset-0 z-10 opacity-[0.04] pointer-events-none mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
 
         @php
             $fallbackBanners = [
@@ -25,19 +26,26 @@
                  x-transition:leave-end="opacity-0"
                  class="absolute inset-0 w-full h-full">
                 
-                <!-- Ken Burns Effect Wrapper -->
-                <div class="absolute inset-0 w-full h-full transform transition-transform duration-[10000ms] ease-out scale-110" 
-                     :class="activeSlide === {{ $index }} ? 'scale-100' : 'scale-125'">
+                <!-- Blurred Background Layer to fill empty space for any aspect ratio (With Parallax) -->
+                <div class="absolute inset-0 w-full h-full transform will-change-transform" :style="`transform: translateY(${scrolled * 0.4}px)`">
                     <img src="{{ asset('storage/' . (is_array($banner) ? $banner['image'] : $banner->image)) }}" 
-                         class="w-full h-full object-cover brightness-75">
+                         class="w-full h-full object-cover blur-2xl opacity-40 scale-125">
+                </div>
+
+                <!-- Ken Burns + Parallax Effect Wrapper (Foreground) -->
+                <div class="absolute inset-0 w-full h-full transform transition-transform duration-[10000ms] ease-out scale-105 will-change-transform" 
+                     :class="activeSlide === {{ $index }} ? 'scale-100' : 'scale-110'"
+                     :style="`transform: translateY(${scrolled * 0.15}px) ${activeSlide === {{ $index }} ? 'scale(1)' : 'scale(1.1)'}`">
+                    <img src="{{ asset('storage/' . (is_array($banner) ? $banner['image'] : $banner->image)) }}" 
+                         class="w-full h-full object-contain object-center brightness-90">
                 </div>
 
                 <!-- Gradient Overlays -->
-                <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent z-20"></div>
-                <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-20"></div>
+                <div class="absolute inset-0 bg-gradient-to-r from-[#0A0A0A]/90 via-[#0A0A0A]/20 to-transparent z-20"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-[#0A0A0A]/80 via-transparent to-transparent z-20"></div>
                 
                 <!-- Content -->
-                <div class="absolute inset-0 flex items-center z-30 px-6 md:px-24">
+                <div class="absolute inset-0 flex items-center z-30 px-4 md:px-12 lg:px-24">
                     <div class="max-w-4xl"
                          x-show="activeSlide === {{ $index }}"
                          x-transition:enter="transition ease-out duration-1000 delay-500"
@@ -58,7 +66,7 @@
                             <span class="text-[#D4AF37] text-xs font-bold uppercase tracking-[0.4em]">{{ $preTitle }}</span>
                         </div>
 
-                        <h1 class="text-6xl md:text-9xl font-serif text-white font-bold leading-tight mb-8 tracking-tighter drop-shadow-2xl">
+                        <h1 class="text-4xl md:text-7xl lg:text-9xl font-serif text-white font-bold leading-tight mb-6 md:mb-8 tracking-tighter drop-shadow-2xl">
                             @php
                                 $words = explode(' ', $headline);
                                 $lastWord = array_pop($words);
@@ -67,9 +75,8 @@
                             {{ $firstPart }} <span class="italic text-[#D4AF37]">{{ $lastWord }}</span>
                         </h1>
 
-                        <!-- Glassmorphism Card -->
-                        <div class="backdrop-blur-md bg-white/5 border border-white/10 p-8 rounded-sm inline-block transform hover:scale-[1.02] transition-transform duration-500 shadow-2xl">
-                            <p class="text-white/80 text-lg md:text-xl font-light mb-8 max-w-lg leading-relaxed font-serif italic text-left rtl:text-right">
+                        <div class="backdrop-blur-md bg-white/5 border border-white/10 p-6 md:p-8 rounded-sm inline-block transform hover:scale-[1.02] transition-transform duration-500 shadow-2xl">
+                            <p class="text-white/80 text-sm md:text-xl font-light mb-6 md:mb-8 max-w-sm md:max-w-lg leading-relaxed font-serif italic text-left rtl:text-right">
                                 {{ $subheadline }}
                             </p>
                             
@@ -124,37 +131,69 @@
         </div>
     </div>
 
-    <!-- 3. Categories Grid (Modern) -->
-    <section class="py-24 px-4 max-w-7xl mx-auto" x-data="{ visible: false }" x-intersect.margin.-20%="visible = true">
-        <h2 class="text-4xl font-serif text-center mb-16 tracking-tight text-gray-900" :class="visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'" class="transition-all duration-1000 ease-out">{{ __('Shop by Category') }}</h2>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-10">
-            @foreach($categories as $category)
-                <a href="{{ route('shop', ['selectedCategories' => [$category->id]]) }}" class="group relative aspect-[3/4] overflow-hidden">
-                    @if($category->image)
-                        <img src="{{ asset('storage/' . $category->image) }}" 
-                             loading="lazy"
-                             decoding="async"
-                             class="w-full h-full object-cover transition duration-1000 group-hover:scale-105">
-                    @else
-                        <div class="w-full h-full bg-[#FDFBF7] flex items-center justify-center text-gray-300 text-3xl font-serif border border-gray-100">{{ substr($category->name, 0, 1) }}</div>
-                    @endif
-                    <div class="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition duration-500"></div>
-                    <div class="absolute inset-0 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                        <span class="text-[10px] uppercase tracking-[0.3em] mb-2">{{ __('Explore') }}</span>
-                        <h3 class="text-2xl font-serif border-b border-white pb-1">{{ $category->name }}</h3>
-                    </div>
-                    <!-- Default labels for accessibility/visual when not hovered -->
-                    <div class="absolute bottom-6 left-6 text-white group-hover:opacity-0 transition-opacity duration-500">
-                        <h3 class="text-xl font-serif drop-shadow-sm">{{ $category->name }}</h3>
-                    </div>
-                </a>
-            @endforeach
+    <!-- 3. Categories Asymmetrical Bento Grid (2026 Vision) -->
+    <section class="py-32 px-4 max-w-7xl mx-auto" x-data="{ visible: false }" x-intersect.margin.-10%="visible = true">
+        <div class="transition-all duration-[1500ms] ease-out transform" :class="visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-24'">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-16 md:mb-24">
+                <div>
+                    <h2 class="text-4xl md:text-6xl font-serif tracking-tighter text-gray-900 mb-4">{{ __('Shop by Category') }}</h2>
+                    <div class="h-[1px] w-24 bg-[#D4AF37]"></div>
+                </div>
+                <p class="hidden md:block text-gray-400 font-serif italic max-w-sm text-right">
+                    {{ __('Explore our curated selection of Yemen\'s finest natural treasures, harvested with centuries of tradition.') }}
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 md:grid-rows-[auto] gap-4 md:gap-6">
+                @foreach($categories as $index => $category)
+                    @php
+                        // Repeating Bento Grid Pattern (every 4 items)
+                        $bentoClasses = match($index % 4) {
+                            0 => 'md:col-span-2 md:row-[span_2_/_span_2] aspect-square md:aspect-auto md:h-[600px]', // Large Feature
+                            1 => 'md:col-span-1 md:row-span-1 aspect-square md:aspect-auto md:h-[290px]', // Small Top
+                            2 => 'md:col-span-1 md:row-span-1 aspect-square md:aspect-auto md:h-[290px]', // Small Top Right
+                            3 => 'md:col-span-2 md:row-span-1 aspect-[2/1] md:aspect-[2/0.95] md:h-[290px]', // Wide Bottom
+                        };
+                    @endphp
+                    <a href="{{ route('shop', ['selectedCategories' => [$category->id]]) }}" 
+                       class="group relative overflow-hidden bg-[#FDFBF7] transition-all duration-[1200ms] ease-[cubic-bezier(0.23,1,0.32,1)] hover:shadow-2xl {{ $bentoClasses }}"
+                       :style="visible ? `transition-delay: ${ {{ $index % 4 }} * 200 }ms` : ''"
+                       :class="visible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-12'">
+                        
+                        @if($category->image)
+                            <div class="w-full h-full flex items-center justify-center p-8 group-hover:bg-[#F5F2EB] transition-colors duration-700">
+                                <img src="{{ asset('storage/' . $category->image) }}" 
+                                     loading="lazy"
+                                     decoding="async"
+                                     class="w-full h-full object-contain filter drop-shadow-lg transition-transform duration-[2000ms] ease-out group-hover:scale-110 group-hover:-rotate-2">
+                            </div>
+                        @else
+                            <div class="w-full h-full flex items-center justify-center text-gray-200 text-6xl font-serif">{{ substr($category->name, 0, 1) }}</div>
+                        @endif
+                        
+                        <!-- Magnetic Hover Overlay -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-40 group-hover:opacity-60 transition-opacity duration-700"></div>
+                        
+                        <!-- Content Reveal -->
+                        <div class="absolute inset-0 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-700 transform group-hover:translate-y-0 translate-y-4">
+                            <span class="text-[9px] uppercase tracking-[0.4em] mb-4 text-[#D4AF37]">{{ __('Discover') }}</span>
+                            <h3 class="text-3xl font-serif text-center px-4">{{ $category->name }}</h3>
+                        </div>
+                        
+                        <!-- Static Label (Fades out on hover) -->
+                        <div class="absolute bottom-6 left-6 text-white group-hover:opacity-0 group-hover:translate-y-4 transition-all duration-500">
+                            <span class="block text-[8px] uppercase tracking-[0.3em] text-[#D4AF37] mb-1 font-bold">{{ str_pad($index + 1, 2, '0', STR_PAD_LEFT) }}</span>
+                            <h3 class="text-2xl font-serif drop-shadow-md">{{ $category->name }}</h3>
+                        </div>
+                    </a>
+                @endforeach
+            </div>
         </div>
     </section>
 
     <!-- 4. Flash Sale (If Active) -->
     @if($flashSales->isNotEmpty())
-        <section class="bg-black py-20 text-white relative" x-data="{ visible: false }" x-intersect.margin.-15%="visible = true">
+        <section class="bg-[#0A0A0A] py-20 text-white relative" x-data="{ visible: false }" x-intersect.margin.-15%="visible = true">
             <div class="max-w-7xl mx-auto px-4 relative z-10 transition-all duration-1000 ease-out" :class="visible ? 'opacity-100' : 'opacity-0'">
                 <div class="flex flex-col md:flex-row items-center justify-between mb-12 transform transition-all duration-1000 delay-300" :class="visible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'">
                     <div>
@@ -189,87 +228,83 @@
     @endif
 
     <!-- 5. New Arrivals -->
-    <section class="py-24 max-w-7xl mx-auto px-4" x-data="{ visible: false }" x-intersect.margin.-15%="visible = true">
-        <div class="text-center mb-16 transition-all duration-1000 ease-out" :class="visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'">
-            <h2 class="text-4xl font-serif text-gray-900 mb-4">{{ __('New Arrivals') }}</h2>
-            <div class="h-0.5 w-12 bg-[#D4AF37] mx-auto mb-4"></div>
-            <p class="text-gray-500 uppercase tracking-[0.2em] text-[10px]">{{ __('Curated treasures from the heart of Yemen') }}</p>
+    <section class="py-32 md:py-40 max-w-7xl mx-auto px-4" x-data="{ visible: false }" x-intersect.margin.-10%="visible = true">
+        <div class="flex flex-col md:flex-row justify-between items-end mb-20 md:mb-24 transition-all duration-1000 ease-out transform" :class="visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'">
+            <div>
+                <span class="block text-[#D4AF37] text-[10px] uppercase tracking-[0.4em] font-bold mb-4">{{ __('Latest Editions') }}</span>
+                <h2 class="text-4xl md:text-6xl font-serif text-gray-900 tracking-tighter">{{ __('New') }} <span class="italic text-gray-400">{{ __('Arrivals') }}</span></h2>
+            </div>
+            <div class="hidden md:flex flex-col items-end">
+                <div class="h-[1px] w-12 bg-[#D4AF37] mb-4"></div>
+                <p class="text-gray-400 font-serif italic max-w-xs text-right text-sm">
+                    {{ __('Curated treasures from the heart of Yemen, arriving freshly to our collection.') }}
+                </p>
+            </div>
         </div>
         
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-16">
-            @foreach($newArrivals as $product)
-                <x-product-card :product="$product" />
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 md:gap-x-10 gap-y-16 md:gap-y-24">
+            @foreach($newArrivals as $index => $product)
+                <div class="transition-all duration-1000 ease-out transform pointer-events-auto group" :style="visible ? `transition-delay: ${ {{ $index }} * 100 }ms` : ''" :class="visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'">
+                    <x-product-card :product="$product" />
+                </div>
             @endforeach
         </div>
 
-        <div class="text-center mt-16">
-            <a href="{{ route('shop') }}" class="inline-block border-b border-black pb-1 text-xs uppercase tracking-[0.3em] font-bold hover:text-[#D4AF37] hover:border-[#D4AF37] transition duration-300">
-                {{ __('View Full Collection') }}
+        <div class="text-center mt-24 transition-all duration-1000 delay-500" :class="visible ? 'opacity-100' : 'opacity-0'">
+            <a href="{{ route('shop') }}" class="group relative inline-flex items-center gap-4 text-xs uppercase tracking-[0.3em] font-bold text-gray-900 transition duration-300">
+                <span class="relative z-10 group-hover:text-[#D4AF37] transition-colors">{{ __('View Full Collection') }}</span>
+                <div class="w-12 h-[1px] bg-gray-300 group-hover:bg-[#D4AF37] group-hover:w-20 transition-all duration-500"></div>
             </a>
         </div>
     </section>
 
     <!-- 6. Best Sellers -->
-    <section class="bg-[#FDFBF7] py-24" x-data="{ visible: false }" x-intersect.margin.-15%="visible = true">
-        <div class="max-w-7xl mx-auto px-4 transition-all duration-1000 ease-out" :class="visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'">
-            <h2 class="text-4xl font-serif text-center mb-16 tracking-tight text-gray-900">{{ __('The Masterpieces') }}</h2>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
-                @foreach($bestSellers as $product)
-                     <x-product-card :product="$product" />
+    <section class="bg-[#FDFBF7] py-32 md:py-40" x-data="{ visible: false }" x-intersect.margin.-10%="visible = true">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex flex-col items-center mb-20 md:mb-24 transition-all duration-1000 ease-out transform" :class="visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'">
+                <span class="text-[#D4AF37] text-[10px] uppercase tracking-[0.4em] font-bold mb-4">{{ __('Iconic Pieces') }}</span>
+                <h2 class="text-4xl md:text-6xl font-serif text-gray-900 tracking-tighter text-center">{{ __('The') }} <span class="italic text-gray-400">{{ __('Masterpieces') }}</span></h2>
+                <div class="h-[1px] w-12 bg-[#D4AF37] mt-8"></div>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-10 gap-y-16 md:gap-y-24 text-center">
+                @foreach($bestSellers as $index => $product)
+                     <div class="transition-all duration-1000 ease-out transform pointer-events-auto group" :style="visible ? `transition-delay: ${ {{ $index }} * 100 }ms` : ''" :class="visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'">
+                        <x-product-card :product="$product" />
+                     </div>
                 @endforeach
             </div>
         </div>
     </section>
 
-    <!-- 7. Instagram Feed (Shop the Look) -->
-    <section class="py-24 border-t border-gray-100" x-data="{ visible: false }" x-intersect.margin.-15%="visible = true">
-        <div class="max-w-7xl mx-auto px-4 transition-all duration-1000 ease-out" :class="visible ? 'opacity-100' : 'opacity-0 translate-y-8'">
-            <div class="text-center mb-16">
-                <span class="text-[#D4AF37] text-xs font-bold uppercase tracking-[0.4em] mb-4 block">{{ __('Social Proof') }}</span>
-                <h2 class="text-4xl font-serif text-gray-900 mb-4">{{ __('Shop the Look') }}</h2>
-                <p class="text-gray-500 uppercase tracking-[0.2em] text-[10px]">{{ __('Tag @YemenSouqEurope to be featured') }}</p>
-            </div>
-            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                @foreach(range(1, 6) as $i)
-                    <div class="aspect-square bg-gray-100 overflow-hidden relative group cursor-pointer">
-                        <div class="w-full h-full flex items-center justify-center text-gray-300">
-                             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                        </div>
-                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
-                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    </section>
+
 
     <!-- 8. Premium Trust Signals -->
-    <section class="bg-black py-16 overflow-hidden">
-        <div class="max-w-7xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-12 text-center">
-            <div class="flex flex-col items-center gap-4 group cursor-default">
-                <div class="w-14 h-14 rounded-full border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37] group-hover:bg-[#D4AF37] group-hover:text-black transition-all duration-500">
+    <section class="bg-[#0A0A0A] py-16 overflow-hidden" x-data="{ visible: false }" x-intersect.margin.-10%="visible = true">
+        <div class="max-w-7xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-12 text-center transition-all duration-1000 ease-out transform" :class="visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'">
+            <div class="flex flex-col items-center gap-4 group cursor-default" :style="visible ? 'transition-delay: 100ms' : ''">
+                <div class="w-14 h-14 rounded-full border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37] group-hover:bg-[#D4AF37] group-hover:text-black group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(212,175,55,0.4)] transition-all duration-500">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </div>
                 <h3 class="font-serif text-white text-lg tracking-tight">{{ __('Fast Delivery') }}</h3>
                 <p class="text-[10px] text-gray-500 uppercase tracking-[0.2em]">{{ __('Across Europe in 3-5 days') }}</p>
             </div>
-             <div class="flex flex-col items-center gap-4 group cursor-default">
-                <div class="w-14 h-14 rounded-full border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37] group-hover:bg-[#D4AF37] group-hover:text-black transition-all duration-500">
+             <div class="flex flex-col items-center gap-4 group cursor-default" :style="visible ? 'transition-delay: 300ms' : ''">
+                <div class="w-14 h-14 rounded-full border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37] group-hover:bg-[#D4AF37] group-hover:text-black group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(212,175,55,0.4)] transition-all duration-500">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </div>
                 <h3 class="font-serif text-white text-lg tracking-tight">{{ __('Authentic Quality') }}</h3>
                 <p class="text-[10px] text-gray-500 uppercase tracking-[0.2em]">{{ __('100% Yemeni sourced directly') }}</p>
             </div>
-             <div class="flex flex-col items-center gap-4 group cursor-default">
-                <div class="w-14 h-14 rounded-full border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37] group-hover:bg-[#D4AF37] group-hover:text-black transition-all duration-500">
+             <div class="flex flex-col items-center gap-4 group cursor-default" :style="visible ? 'transition-delay: 500ms' : ''">
+                <div class="w-14 h-14 rounded-full border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37] group-hover:bg-[#D4AF37] group-hover:text-black group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(212,175,55,0.4)] transition-all duration-500">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 002 2z"></path></svg>
                 </div>
                 <h3 class="font-serif text-white text-lg tracking-tight">{{ __('Secure Payments') }}</h3>
                 <p class="text-[10px] text-gray-500 uppercase tracking-[0.2em]">{{ __('PCI Compliant Stripe & COD') }}</p>
             </div>
-             <div class="flex flex-col items-center gap-4 group cursor-default">
-                <div class="w-14 h-14 rounded-full border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37] group-hover:bg-[#D4AF37] group-hover:text-black transition-all duration-500">
+             <div class="flex flex-col items-center gap-4 group cursor-default" :style="visible ? 'transition-delay: 700ms' : ''">
+                <div class="w-14 h-14 rounded-full border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37] group-hover:bg-[#D4AF37] group-hover:text-black group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(212,175,55,0.4)] transition-all duration-500">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                 </div>
                 <h3 class="font-serif text-white text-lg tracking-tight">{{ __('24/7 Concierge') }}</h3>
@@ -280,6 +315,10 @@
 
     <!-- 9. Styles -->
     <style>
+        .hero-container { height: 60vh; }
+        @media (min-width: 768px) { .hero-container { height: 65vh; } }
+        @media (min-width: 1024px) { .hero-container { height: 80vh; max-height: 800px; } }
+        
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
